@@ -14,5 +14,7 @@ Release/
 *.ucn
 *.bsv
 *.out
+*.sdf
+*.opensdf
 
 *.pyc
