@@ -44,7 +44,8 @@ C         SWI PARAMETERS
         REAL, PARAMETER :: SWILOCK = 0.001
 C         SWI DIMENSIONS
         INTEGER, SAVE, POINTER :: NSRF,ISTRAT,NSWIOPT,NZONES
-        INTEGER, SAVE, POINTER :: IANTILOCKOPT, ITIPTOEOPT
+        INTEGER, SAVE, POINTER :: IANTILOCKOPT, ISWI2ADOPT
+        INTEGER, SAVE, POINTER :: ITIPTOEOPT
 C         SWI ADAPTIVE TIME STEP
         INTEGER, SAVE, POINTER :: NADPTFLG
         INTEGER, SAVE, POINTER :: NADPTMX
@@ -121,7 +122,8 @@ C---------STORAGE FOR SOLVERS
         TYPE GWFSWITYPE
 C           SWI DIMENSIONS
           INTEGER, POINTER :: NSRF,ISTRAT,NSWIOPT,NZONES
-          INTEGER, POINTER :: IANTILOCKOPT, ITIPTOEOPT
+          INTEGER, POINTER :: IANTILOCKOPT, ISWI2ADOPT
+          INTEGER, POINTER :: ITIPTOEOPT
 C           SWI ADAPTIVE TIME STEP
           INTEGER, POINTER :: NADPTFLG
           INTEGER, POINTER :: NADPTMX
@@ -295,12 +297,14 @@ C---------ALLOCATE VARIABLES - INITIALIZE IF POSSIBLE
         ALLOCATE(TOESLOPE,TIPSLOPE,ALPHA,BETA)
         
         ALLOCATE(IANTILOCKOPT)
+        ALLOCATE(ISWI2ADOPT)
         ALLOCATE(ITIPTOEOPT)
 
         IOBSHEADER   = 0
         iadptflg     = 0
         NSWIOPT      = 0
         IANTILOCKOPT = 0
+        ISWI2ADOPT   = 0
         ITIPTOEOPT   = 0
 C
 C---------IDENTIFY PACKAGE AND INITIALIZE
@@ -325,7 +329,9 @@ C         TEST FOR KEYWORD ARGUMENTS
               NSWIOPT = 1
             CASE ( 'ANTILOCK2' )
               IANTILOCKOPT = 1
-            CASE ( 'TIPTOE_FIRST' )
+            CASE ( 'ADVANCE_ADJUST' )
+              ISWI2ADOPT = 1
+            CASE ( 'NO_TIPTOE' )
               ITIPTOEOPT = 1
             CASE ( '0', '' )
               EXIT
@@ -352,7 +358,8 @@ C---------WRITE DATASET 1
      2                    ISWIZT, ISWICB, ISWIOBS
 C         DATASET 1 OPTIONS
         IF ( NSWIOPT.NE.0 .OR. iadptflg.NE.0 .OR.
-     2       IANTILOCKOPT.NE.0 .OR. ITIPTOEOPT.NE.0 ) THEN
+     2       IANTILOCKOPT.NE.0 .OR. ISWI2ADOPT.NE.0 .OR.
+     3       ITIPTOEOPT.NE.0 ) THEN
           WRITE (IOUT,2300)
           IF ( NSWIOPT.NE.0 ) THEN
             WRITE (IOUT,2310) 
@@ -366,9 +373,13 @@ C         DATASET 1 OPTIONS
             WRITE (IOUT,2310) 
      2        'ANTILOCKING BASED ON MINIMUM THICKNESS OPTION   '
           END IF
-          IF ( ITIPTOEOPT.NE.0 ) THEN
+          IF ( ISWI2ADOPT.NE.0 ) THEN
             WRITE (IOUT,2310) 
      2        'TIP/TOE AND ANTILOCKING UPDATED IN ADVANCE      '
+          END IF
+          IF ( ITIPTOEOPT.NE.0 ) THEN
+            WRITE (IOUT,2310) 
+     2        'TIP/TOE ADJUSTMENTS WILL MADE BE MADE           '
           END IF
           WRITE (IOUT,2320)
         END IF
@@ -999,11 +1010,13 @@ C---------UPDATE ZETA FOR UPPER SURFACE FOR CONVERTIBLE LAYERS
           CALL SSWI2_UPZ1(k,1)
         END DO
 C
-C---------EXECUTE TIP AND TOW MOVEMENT AND ANTILOCKING IF ITIPTOEOPT IS 1
-        IF (ITIPTOEOPT.NE.0) THEN
+C---------EXECUTE TIP AND TOW MOVEMENT AND ANTILOCKING IF ISWI2ADOPT IS 1
+        IF (ISWI2ADOPT.NE.0) THEN
 C
 C-----------HORIZONTAL MOVEMENT OF SURFACES WHEN A POSITIVE ALPHA IS SPECIFIED
-          CALL SSWI2_HORZMOVE(Kkstp,Kkper)
+          IF (ITIPTOEOPT.NE.1) THEN
+            CALL SSWI2_HORZMOVE(Kkstp,Kkper)
+          END IF
 C
 C-----------ADJUST TIP AND TOE FOR CELLS WERE CURRENT CELL IS AT THE TOP OR BOTTOM
 C           AND THE ADJACENT CELL IS AT THE BOTTOM OR TOP, RESPECTIVELY.
@@ -1408,7 +1421,7 @@ C           RESET IADPTMOD AND ADPTVAL
           ADPTVAL  = 1.0
 C
 C-----------MOVE TIPS AND TOES OF ZETA SURFACES
-          CALL SSWI2_TIPTOE(Kkstp,Kkper)
+          CALL SSWI2_ZETAADJ(Kkstp,Kkper)
         END IF ADPUPZTST
 2010    FORMAT(1X,A,
      2         1X,'IADPT      :',1X,I10,
@@ -1660,7 +1673,7 @@ C-----------WRITE ZETA TO UNFORMATTED FILE PRIOR TO TIP AND TOE TRACKING
             END DO
           END IF
 C-----------MOVE TIPS AND TOES
-          CALL SSWI2_TIPTOE(Kkstp,Kkper)
+          CALL SSWI2_ZETAADJ(Kkstp,Kkper)
         END IF
 C
 C---------WRITE FINAL ZETA TO UNFORMATTED FILE
@@ -2150,10 +2163,10 @@ C---------RETURN
       END SUBROUTINE SSWI2_SR
 C
 C
-      SUBROUTINE SSWI2_TIPTOE(Kkstp,Kkper)
+      SUBROUTINE SSWI2_ZETAADJ(Kkstp,Kkper)
 C
 C     ******************************************************************
-C     MOVE TIPS AND TOES FOR SWI2 PACKAGE
+C     POST FLOW SOLUTION AND ZETA SOLUTION ADJUSTMENT OF ZETA SURFACES
 C     ******************************************************************
 C
 C     SPECIFICATIONS:
@@ -2198,8 +2211,10 @@ C-----------VERTICAL MOVEMENT OF SURFACES WHEN A POSITIVE ALPHA IS SPECIFIED
           CALL SSWI2_VERTMOVE(Kkstp,Kkper)
 C
 C-----------HORIZONTAL MOVEMENT OF SURFACES WHEN A POSITIVE ALPHA IS SPECIFIED
-          IF (ITIPTOEOPT.NE.1) THEN
-            CALL SSWI2_HORZMOVE(Kkstp,Kkper)
+          IF (ISWI2ADOPT.NE.1) THEN
+            IF (ITIPTOEOPT.NE.1) THEN
+              CALL SSWI2_HORZMOVE(Kkstp,Kkper)
+            END IF
           END IF
 C
 C-----------CHECK WHETHER ANYWHERE THE THICKNESS GETS TOO THIN
@@ -2210,7 +2225,7 @@ C-----------MODIFY ZETA ANYWHERE THE SURFACES ARE CROSSING
 C
 C-----------ADJUST TIP AND TOE FOR CELLS WERE CURRENT CELL IS AT THE TOP OR BOTTOM
 C           AND THE ADJACENT CELL IS AT THE BOTTOM OR TOP, RESPECTIVELY.
-          IF (ITIPTOEOPT.NE.1) THEN
+          IF (ISWI2ADOPT.NE.1) THEN
             IF (IANTILOCKOPT.NE.1) THEN
               CALL SSWI2_ANTILOCK(Kkstp,Kkper)
             ELSE
@@ -2236,7 +2251,7 @@ C---------RESET ZETASWITS0 TO ZETA
 C
 C---------RETURN
         RETURN
-      END SUBROUTINE SSWI2_TIPTOE
+      END SUBROUTINE SSWI2_ZETAADJ
 C
 C
       SUBROUTINE SSWI2_VERTMOVE(Kkstp,Kkper)
@@ -2992,11 +3007,13 @@ C----------------------LEFT FACE
                         d1  = DELR(j)
                         s1  = SSZ(j,i,k)
                         kk1 = LBOTM(k)
-                        t1  = (BOTM(j,i,kk1-1) - BOTM(j,i,kk1))
+                        t1  = (BOTM(j,i,kk1-1) - BOTM(j,i,kk1)) *
+     2                        ALPHA
                         d2  = DELR(j-1)
                         s2  = SSZ(j-1,i,k)
                         kk2 = LBOTM(k)
-                        t2  = (BOTM(j-1,i,kk2-1) - BOTM(j-1,i,kk2))
+                        t2  = (BOTM(j-1,i,kk2-1) - BOTM(j-1,i,kk2)) *
+     2                        ALPHA
 
                         dzetamax = SWILOCK
                         if (dzetamax.GT.t1 .OR. dzetamax.GT.t2) then
@@ -3021,11 +3038,13 @@ C----------------------RIGHT FACE
                         d1  = DELR(j)
                         s1  = SSZ(j,i,k)
                         kk1 = LBOTM(k)
-                        t1  = (BOTM(j,i,kk1-1) - BOTM(j,i,kk1))
+                        t1  = (BOTM(j,i,kk1-1) - BOTM(j,i,kk1)) *
+     2                        ALPHA
                         d2  = DELR(j+1)
                         s2  = SSZ(j+1,i,k)
                         kk2 = LBOTM(k)
-                        t2  = (BOTM(j+1,i,kk2-1) - BOTM(j+1,i,kk2))
+                        t2  = (BOTM(j+1,i,kk2-1) - BOTM(j+1,i,kk2)) *
+     2                        ALPHA
                         
                         dzetamax = SWILOCK
                         if (dzetamax.GT.t1 .OR. dzetamax.GT.t2) then
@@ -3053,11 +3072,13 @@ C-----------------------BACK FACE
                         d1  = DELC(i)
                         s1  = SSZ(j,i,k)
                         kk1 = LBOTM(k)
-                        t1  = (BOTM(j,i,kk1-1) - BOTM(j,i,kk1))
+                        t1  = (BOTM(j,i,kk1-1) - BOTM(j,i,kk1)) *
+     2                        ALPHA
                         d2  = DELC(i-1)
                         s2  = SSZ(j,i-1,k)
                         kk2 = LBOTM(k)
-                        t2  = (BOTM(j,i-1,kk2-1) - BOTM(j,i-1,kk2))
+                        t2  = (BOTM(j,i-1,kk2-1) - BOTM(j,i-1,kk2)) *
+     2                        ALPHA
                         
                         dzetamax = SWILOCK
                         if (dzetamax.GT.t1 .OR. dzetamax.GT.t2) then
@@ -3081,11 +3102,13 @@ C-----------------------FRONT FACE
                         d1  = DELC(i)
                         s1  = SSZ(j,i,k)
                         kk1 = LBOTM(k)
-                        t1  = (BOTM(j,i,kk1-1) - BOTM(j,i,kk1))
+                        t1  = (BOTM(j,i,kk1-1) - BOTM(j,i,kk1)) *
+     2                        ALPHA
                         d2  = DELC(i+1)
                         s2  = SSZ(j,i+1,k)
                         kk2 = LBOTM(k)
-                        t2  = (BOTM(j,i+1,kk2-1) - BOTM(j,i+1,kk2))
+                        t2  = (BOTM(j,i+1,kk2-1) - BOTM(j,i+1,kk2)) *
+     2                        ALPHA
                         
                         dzetamax = SWILOCK
                         if (dzetamax.GT.t1 .OR. dzetamax.GT.t2) then
@@ -3145,6 +3168,7 @@ C       + + + CODE + + +
         DEALLOCATE(GWFSWIDAT(Igrid)%NZONES)
         
         DEALLOCATE(GWFSWIDAT(Igrid)%IANTILOCKOPT)
+        DEALLOCATE(GWFSWIDAT(Igrid)%ISWI2ADOPT)
         DEALLOCATE(GWFSWIDAT(Igrid)%ITIPTOEOPT)
 
         DEALLOCATE(GWFSWIDAT(Igrid)%NADPTFLG)
@@ -3244,6 +3268,7 @@ C       + + + CODE + + +
         NZONES=>GWFSWIDAT(Igrid)%NZONES
         
         IANTILOCKOPT=>GWFSWIDAT(Igrid)%IANTILOCKOPT
+        ISWI2ADOPT=>GWFSWIDAT(Igrid)%ISWI2ADOPT
         ITIPTOEOPT=>GWFSWIDAT(Igrid)%ITIPTOEOPT
 
         NADPTFLG=>GWFSWIDAT(Igrid)%NADPTFLG
@@ -3345,6 +3370,7 @@ C       + + + CODE + + +
         GWFSWIDAT(Igrid)%NZONES=>NZONES
         
         GWFSWIDAT(Igrid)%IANTILOCKOPT=>IANTILOCKOPT
+        GWFSWIDAT(Igrid)%ISWI2ADOPT=>ISWI2ADOPT
         GWFSWIDAT(Igrid)%ITIPTOEOPT=>ITIPTOEOPT
 
         GWFSWIDAT(Igrid)%NADPTFLG=>NADPTFLG
