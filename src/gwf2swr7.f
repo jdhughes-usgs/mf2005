@@ -7139,7 +7139,6 @@ C     + + + LOCAL DEFINITIONS + + +
         INTEGER :: istr
         INTEGER :: innz
         INTEGER :: ilen
-        INTEGER :: ilen2
         INTEGER :: ihbw
         INTEGER :: irchconnrg
         INTEGER :: istrconn, irch2, irchconn2
@@ -7191,7 +7190,7 @@ C             - IMPLICIT STARTING 1D CONNECTIONS FOR RG
                   irgn = REACH(istrrch0)%IRG
                   IF (irgn.EQ.irg) CYCLE
                   irchc(istrrch0) = irch
-                  iimpc(istrrch0) = 1
+                  iimpc(istrrch0) = iimpc(istrrch0) + 1
                 END DO
               END IF ICONNECTED
             END DO FRC
@@ -7206,14 +7205,20 @@ C             ALLOCATE AND FILL FULL STARTING CONNECTIONS
               ALLOCATE (RCHGRP(n)%IRCHN(RCHGRP(n)%NCONN))
               ALLOCATE (RCHGRP(n)%ISTRRCH(RCHGRP(n)%NCONN))
               ilen = 0
-              ilen2 = 0
-              DO i = 1, NREACHES
-                IF (iimpc(i).GT.IZERO) THEN
-                  ilen = ilen + 1
-                  RCHGRP(n)%IRCHN(ilen) = irchc(i)
-                  RCHGRP(n)%IRCHC(ilen) = i
-                END IF
-              END DO
+              FRC2: DO i = 1, RCHGRP(n)%NRGREACH  
+                irch = RCHGRP(n)%REACH(i)
+                irg  = REACH(irch)%IRG
+                ICONNECTED2: IF (REACH(irch)%NCONN.GT.IZERO) THEN
+                  DO ii = 1, REACH(irch)%NCONN
+                    istrrch0 = REACH(irch)%ICONN(ii)
+                    irgn = REACH(istrrch0)%IRG
+                    IF (irgn.EQ.irg) CYCLE
+                    ilen = ilen + 1
+                    RCHGRP(n)%IRCHN(ilen) = irch
+                    RCHGRP(n)%IRCHC(ilen) = istrrch0
+                  END DO
+                END IF ICONNECTED2
+              END DO FRC2
             END IF
           END DO INITC
 C

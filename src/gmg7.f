@@ -26,6 +26,34 @@ C--------------------------------------------------------------------
         DOUBLE PRECISION,POINTER  :: RELAXGMG
       END TYPE
       TYPE(GMGTYPE), SAVE ::GMGDAT(10)
+      
+      INTERFACE 
+        SUBROUTINE GMG7AP(HNEW,RHS,CR,CC,CV,HCOF,HNOFLO,IBOUND,
+     &                    IITER,MXITER,RCLOSE,HCLOSE,
+     &                    KITER,KSTP,KPER,NCOL,NROW,NLAY,
+     &                    ICNVG,SITER,TSITER,DAMP,IADAMP,
+     &                    IOUTGMG,IOUT,GMGID,
+     &                    IUNITMHC,DUP,DLOW,CHGLIMIT,BIGHEADCHG,
+     &                    HNEWLAST)  
+          USE ISO_C_BINDING
+          USE GMG_C_INTERFACE
+          IMPLICIT NONE
+          REAL RHS(*),CR(*),CC(*),CV(*),HCOF(*),HNEWLAST(*)
+          TARGET RHS, CR, CC, CV, HCOF
+          REAL HNOFLO,RCLOSE,HCLOSE,DAMP
+          TARGET HNOFLO
+          REAL DUP,DLOW,CHGLIMIT
+          DOUBLE PRECISION BIGHEADCHG
+          DOUBLE PRECISION HNEW(*)
+          INTEGER IBOUND(*)
+          INTEGER MXITER,IITER,KITER,KSTP,KPER,NCOL,NROW,NLAY,ICNVG,
+     1            IOUTGMG,IOUT
+          TYPE ( C_PTR ) :: GMGID
+          INTEGER SITER,TSITER
+          INTEGER IADAMP,IUNITMHC
+        END SUBROUTINE GMG7AP
+      END INTERFACE
+      
       END MODULE GMGMODULE
 C
       SUBROUTINE GMG7AR(IN,MXITER,IGRID)
@@ -185,7 +213,8 @@ C***********************************************************************
      &                  KITER,KSTP,KPER,NCOL,NROW,NLAY,
      &                  ICNVG,SITER,TSITER,DAMP,IADAMP,
      &                  IOUTGMG,IOUT,GMGID,
-     &        IUNITMHC,DUP,DLOW,CHGLIMIT,BIGHEADCHG,HNEWLAST)
+     &                  IUNITMHC,DUP,DLOW,CHGLIMIT,BIGHEADCHG,
+     &                  HNEWLAST)
 C***********************************************************************
 C     GMG7AP CALLS THE FOLLOWING FUNCTIONS FROM THE GMG LIBRARY:
 C
@@ -211,16 +240,16 @@ C--------------------------------------------------------------------
       USE GMG_C_INTERFACE
       IMPLICIT NONE
       REAL RHS(*),CR(*),CC(*),CV(*),HCOF(*),HNEWLAST(*)
-      !TARGET RHS, CR, CC, CV, HCOF
+      TARGET RHS, CR, CC, CV, HCOF
       REAL HNOFLO,RCLOSE,HCLOSE,DAMP
-      !TARGET HNOFLO
+      TARGET HNOFLO
       REAL DUP,DLOW,CHGLIMIT
       DOUBLE PRECISION BIGHEADCHG
       DOUBLE PRECISION HNEW(*)
       INTEGER IBOUND(*)
       INTEGER MXITER,IITER,KITER,KSTP,KPER,NCOL,NROW,NLAY,ICNVG,
      1        IOUTGMG,IOUT
-      TYPE ( C_PTR ) ::GMGID
+      TYPE ( C_PTR ) :: GMGID
       INTEGER SITER,TSITER
       INTEGER IADAMP,IUNITMHC
 C
@@ -236,6 +265,7 @@ C
       DOUBLE PRECISION, SAVE ::DDAMP
       DOUBLE PRECISION       ::RSQ
       REAL                   ::DAMPA,BIGHA
+      
 C--------------------------------------------------------------------
 C
 C--------------------------------------------------------------------
