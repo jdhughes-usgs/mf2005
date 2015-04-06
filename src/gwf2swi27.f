@@ -1452,7 +1452,7 @@ C     ------------------------------------------------------------------
      3                        CR,CC,CV,HCOF,RHS,
      4                        DELR,DELC,IBOUND,HNEW,HOLD,
      5                        BUFF,ISSFLG,NSTP
-        USE GWFBASMODULE, ONLY: DELT,HDRY,TOTIM,
+        USE GWFBASMODULE, ONLY: DELT,PERTIM,TOTIM,HDRY,
      2                          IHDDFL,IBUDFL,ICBCFL,IOFLG,
      3                          MSUM,VBVL,VBNM
         USE GWFSWIMODULE
@@ -1580,7 +1580,7 @@ C-------DETERMINE IF ZETA VALUES SHOULD BE OUTPUT
       END IF
 C-------INITIALIZE CELL-BY-CELL FLOW TERM FLAG (IBD) AND
       ibd    = 0
-      IF( ISWICB.LT.0 .AND. ICBCFL.NE.0 ) ibd = -1
+      !IF( ISWICB.LT.0 .AND. ICBCFL.NE.0 ) ibd = -1
       IF( ISWICB.GT.0 ) ibd = ICBCFL
       ibdlbl = 0
 C
@@ -1588,16 +1588,29 @@ C-------IF CELL-BY-CELL TERMS WILL BE SAVED AS A 3-D ARRAY, THEN CALL
 C       UTILITY MODULE UBUDSV TO SAVE THEM.
       IF ( ibd.EQ.1 ) CALL UBUDSV(Kkstp,Kkper,textflf(1),ISWICB,
      2                            QLEXTRACUM,NCOL,NROW,NLAY,IOUT)
+      IF ( ibd.EQ.2 ) CALL UBDSV1(Kkstp,Kkper,textflf(1),ISWICB,
+     2                            QLEXTRACUM,NCOL,NROW,NLAY,IOUT,
+     3                            DELT,PERTIM,TOTIM,IBOUND)
 
       IF ( ibd.EQ.1 ) CALL UBUDSV(Kkstp,Kkper,textfrf(1),ISWICB,
      2                            QREXTRACUM,NCOL,NROW,NLAY,IOUT)
+      IF ( ibd.EQ.2 ) CALL UBDSV1(Kkstp,Kkper,textfrf(1),ISWICB,
+     2                            QREXTRACUM,NCOL,NROW,NLAY,IOUT,
+     3                            DELT,PERTIM,TOTIM,IBOUND)
 
       IF ( ibd.EQ.1 ) CALL UBUDSV(Kkstp,Kkper,textfff(1),ISWICB,
      2                            QFEXTRACUM,NCOL,NROW,NLAY,IOUT)
+      IF ( ibd.EQ.2 ) CALL UBDSV1(Kkstp,Kkper,textfff(1),ISWICB,
+     2                            QFEXTRACUM,NCOL,NROW,NLAY,IOUT,
+     3                            DELT,PERTIM,TOTIM,IBOUND)
+C
 C---------STORE CONSTANT HEAD CORRECTION FLUXES in BUFF
       CALL SSWI2_BDCH(0)
       IF ( ibd.EQ.1 ) CALL UBUDSV(Kkstp,Kkper,textch(1),ISWICB,BUFF,
      2                            NCOL,NROW,NLAY,IOUT)
+      IF ( ibd.EQ.2 ) CALL UBDSV1(Kkstp,Kkper,textch(1),ISWICB,
+     2                            BUFF,NCOL,NROW,NLAY,IOUT,
+     3                            DELT,PERTIM,TOTIM,IBOUND)
 
 C
 C-------SWIADDTOCH FLOW TERMS
