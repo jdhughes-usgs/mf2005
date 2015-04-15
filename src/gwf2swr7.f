@@ -14735,9 +14735,9 @@ C     + + + LOCAL DEFINITIONS + + +
 C     + + + FUNCTIONS + + +
 C     + + + CODE + + +
         IF ( It.EQ.0 ) THEN
-          T1 = SECNDS(0.0)
+          T1 = SECNDS(REAL(0.0,4))
         ELSE
-          dt = SECNDS(T1)
+          dt = SECNDS(REAL(T1,4))
           Ts = Ts + DBLE(dt)
         END IF
 C---------RETURN
