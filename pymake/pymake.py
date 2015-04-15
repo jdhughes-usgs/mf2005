@@ -41,6 +41,8 @@ def parser():
                         default='gcc', choices=['gcc'])
     parser.add_argument('-mc', '--makeclean', help='Clean files when done',
                         action='store_true')
+    parser.add_argument('-dbl', '--double', help='double precision version',
+                        action='store_true', default=False)                        
     parser.add_argument('-e', '--expedite',
                         help='''Only compile out of date source files.
                         Clean must not have been used on previous build.
@@ -162,12 +164,15 @@ def out_of_date(srcfile, objfile):
     return ood
 
 def compile_with_gnu(srcfiles, target, objdir_temp, moddir_temp,
-                     expedite, dryrun):
+                     expedite, dryrun, dbl):
     '''
     Compile the program using the gnu compilers (gfortran and gcc)
     '''
     fc = 'gfortran'
     compileflags = ['-m64', '-g', '-O2', '-mtune=native', '-mfpmath=sse']
+    dblflags = ['-fdefault-real-8', '-fdefault-double-8']
+    if dbl:
+        compileflags += dblflags
     objext = '.o'
 
     #c stuff -- thanks to mja
@@ -311,7 +316,7 @@ def makebatch(batchfile, fc, compileflags, srcfiles, target, platform):
     f.close()
     return
 
-def main(srcdir, target, fc, makeclean, expedite, dryrun):
+def main(srcdir, target, fc, makeclean, expedite, dryrun, double):
     '''
     Main part of program
 
@@ -327,7 +332,7 @@ def main(srcdir, target, fc, makeclean, expedite, dryrun):
         objext = '.o'
         create_openspec(srcdir_temp)
         compile_with_gnu(srcfiles, target, objdir_temp, moddir_temp,
-                         expedite, dryrun)
+                         expedite, dryrun, double)
     elif fc == 'ifort':
         objext = '.obj'
         compile_with_ifort(srcfiles, target)
@@ -347,4 +352,4 @@ if __name__ == "__main__":
     #call main -- note that this form allows main to be called
     #from python as a function.
     main(args.srcdir, args.target, args.fc, args.makeclean, args.expedite,
-         args.dryrun)
+         args.dryrun, args.double)
