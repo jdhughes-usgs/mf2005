@@ -101,6 +101,7 @@ C---------INVARIANT PARAMETERS
         INTEGER, PARAMETER          :: IUZFOFFS     = 100000
         INTEGER, PARAMETER          :: IZERO        = 0
         REAL, PARAMETER             :: RZERO        = 0.0
+        INTEGER, PARAMETER          :: IKND         = KIND(RZERO)
         DOUBLEPRECISION, PARAMETER  :: DZERO        = 0.0D0
         REAL, PARAMETER             :: RONE         = 1.0
         DOUBLEPRECISION, PARAMETER  :: DONE         = 1.0D0
@@ -4906,10 +4907,10 @@ C-----------TEMPORARY OUTPUT OF RESULTS
             END IF
             WRITE (*,10) 
      2        Kkper, Kkstp, NUMTIME, 
-     3        SSWR_SCCHAR(swrtot), SSWR_SCCHAR(swrtot+REAL(SWRDT,4)), 
-     4        SSWR_SCCHAR(REAL(SWRDT,4)), 
+     3        SSWR_SCCHAR(swrtot), SSWR_SCCHAR(swrtot+REAL(SWRDT,IKND)), 
+     4        SSWR_SCCHAR(REAL(SWRDT,IKND)), 
      5        SWRTIME(n)%ITER, SWRTIME(n)%ILOCFMAX, 
-     4        SSWR_SCCHAR(REAL(SWRTIME(n)%FMAX,4)), checkresult
+     4        SSWR_SCCHAR(REAL(SWRTIME(n)%FMAX,IKND)), checkresult
           END IF
 0005  FORMAT(1X,' ',' Per: Stp: SWRS:     Time0:     Time1:     SWRDT:',
      2          ' Iters:  MaxL:  Max Resid: C')
@@ -5931,10 +5932,11 @@ C-------WRITE SWR1 CONVERGENCE HISTORY
           swrtot = swrtot + dt
           WRITE ( iu,2105 )
      2      Kper, Kstp, n, 
-     3      SSWR_SCCHAR(REAL(t0,4)), SSWR_SCCHAR(REAL(swrtot,4)), 
-     4      SSWR_SCCHAR(REAL(dt,4)), 
+     3      SSWR_SCCHAR(REAL(t0,IKND)), SSWR_SCCHAR(REAL(swrtot,IKND)), 
+     4      SSWR_SCCHAR(REAL(dt,IKND)), 
      5      SWRTIME(n)%ITER, SWRTIME(n)%ILOCFMAX,
-     5      SSWR_SCCHAR(REAL(SWRTIME(n)%FMAX,4)), (SWRTIME(n)%ICNVG>0)
+     5      SSWR_SCCHAR(REAL(SWRTIME(n)%FMAX,IKND)), 
+     6      (SWRTIME(n)%ICNVG>0)
         END DO
       END IF
 2100  FORMAT( 1X,'    STRESS',1X,'   MODFLOW',1X,'      SWR1',1X,
@@ -9189,7 +9191,7 @@ C       SURFACE WATER ROUTING BUDGET FOR MODEL
      2                      Qaqcumin,Qaqincin,Qaqcumout,Qaqincout)
         USE GLOBAL,       ONLY: IOUT, ISSFLG, NCOL, NROW, NLAY, IBOUND
         USE GWFBASMODULE, ONLY: DELT, TOTIM, IBUDFL
-        USE GWFSWRMODULE, ONLY: IZERO, RZERO, DZERO, DONE, DTWO,
+        USE GWFSWRMODULE, ONLY: IKND, IZERO, RZERO, DZERO, DONE, DTWO,
      &                          ISWRONLY, NUMTIME, ISWRDT,
      &                          REACH, 
      &                          NREACHES, NRCHGRP, RCHGRP,
@@ -9390,7 +9392,7 @@ C             WITH AN UNDERLYING ACTIVE CELL
           END DO TIMES
 C-----------FILL POSITIVE AND NEGATIVE BUDGET ITEMS
           DO iacc = 1, NBDITEMS
-            IF (REAL(tsrate(iacc),4).LT.RZERO) THEN
+            IF (REAL(tsrate(iacc),IKND).LT.RZERO) THEN
               rratout(iacc) = rratout(iacc) - tsrate(iacc)
             ELSE
               rratin(iacc)  = rratin(iacc)  + tsrate(iacc)
@@ -13156,7 +13158,7 @@ C---------RETURN
 C
 C
       CHARACTER (LEN=10) FUNCTION SSWR_SCCHAR(R) RESULT(value)
-        USE GWFSWRMODULE, ONLY: DZERO
+        USE GWFSWRMODULE, ONLY: IKND, DZERO
         IMPLICIT NONE
 C     + + + DUMMY ARGUMENTS + + +
         REAL, INTENT(IN) :: R
@@ -13164,11 +13166,15 @@ C     + + + LOCAL DEFINITIONS + + +
         DOUBLEPRECISION :: t
 C     + + + FUNCTIONS + + +
 C     + + + CODE + + +
-        t = ABS(R)
-        IF( t.GT.9.99999D5 .OR. t.LT.0.01 ) THEN
-          WRITE(value,'(1PE10.3)') R
+        IF (IKND.EQ.4) THEN
+          t = ABS(R)
+          IF( t.GT.9.99999D5 .OR. t.LT.0.01 ) THEN
+            WRITE(value,'(1PE10.3)') R
+          ELSE
+            WRITE(value,'(F10.3)') R
+          END IF
         ELSE
-          WRITE(value,'(F10.3)') R
+          WRITE(value,*) R
         END IF
 C---------RETURN
         RETURN
