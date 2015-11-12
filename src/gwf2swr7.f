@@ -838,13 +838,13 @@ C
 C     SPECIFICATIONS:
 C     ------------------------------------------------------------------
 !      USE OMP_LIB 
-      USE GLOBAL,      ONLY:IOUT,NCOL,NROW,NLAY,IBOUND,IFREFM,
-     2                      NPER,PERLEN,NSTP,TSMULT
-      USE GWFBCFMODULE,ONLY:HYB=>HY,LCB=>LAYCON
-      USE GWFLPFMODULE,ONLY:HKL=>HK
-      USE GWFHUFMODULE,ONLY:HKH=>HK
-      USE GWFUPWMODULE,ONLY:HKU=>HKUPW  !NEWTON
-      USE GWFNWTMODULE,ONLY:HEPS      !NEWTON
+      USE GLOBAL,       ONLY: IOUT, NCOL, NROW, NLAY, IBOUND, IFREFM,
+     2                        NPER, PERLEN, NSTP, TSMULT
+      USE GWFBCFMODULE, ONLY: HYB=>HY, LCB=>LAYCON
+      USE GWFLPFMODULE, ONLY: HKL=>HK
+      USE GWFHUFMODULE, ONLY: HKH=>HK
+      USE GWFUPWMODULE, ONLY: HKU=>HKUPW  !NEWTON
+      USE GWFNWTMODULE, ONLY: HEPS        !NEWTON
       USE GWFSWRMODULE
       IMPLICIT NONE
 C     + + + DUMMY ARGUMENTS + + +
@@ -4134,8 +4134,8 @@ C     ******************************************************************
 C
 C     SPECIFICATIONS:
 C     ------------------------------------------------------------------
-      USE GLOBAL,      ONLY:IOUT,NCOL,NROW,NLAY,HNEW,HOLD,PERLEN
-      USE GWFBASMODULE,ONLY:PERTIM
+      USE GLOBAL,       ONLY:IOUT,NCOL,NROW,NLAY,HNEW,HOLD,PERLEN
+      USE GWFBASMODULE, ONLY:PERTIM
 !      USE GWFSUBMODULE, ONLY: DVZ,SUBLNK,LPFLNK  !SUB-Linkage rth
       USE GWFSWRMODULE
       IMPLICIT NONE
@@ -5493,11 +5493,11 @@ C     ******************************************************************
 C
 C     SPECIFICATIONS:
 C     ------------------------------------------------------------------
-      USE GLOBAL,      ONLY: IOUT,ISSFLG,NCOL,NROW,NLAY,IBOUND,
-     2                       HNEW,HOLD,BUFF
-      USE GWFBASMODULE,ONLY: MSUM,ICBCFL,IAUXSV,DELT,PERTIM,TOTIM,
-     2                       VBVL,VBNM,
-     3                       HDRY
+      USE GLOBAL,       ONLY: IOUT,ISSFLG,NCOL,NROW,NLAY,IBOUND,
+     2                        HNEW,HOLD,BUFF
+      USE GWFBASMODULE, ONLY: MSUM,ICBCFL,IAUXSV,DELT,PERTIM,TOTIM,
+     2                        VBVL,VBNM,
+     3                        HDRY
       USE GWFSWRMODULE
       IMPLICIT NONE
 C     + + + DUMMY ARGUMENTS + + +
